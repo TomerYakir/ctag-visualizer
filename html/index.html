@@ -11,20 +11,111 @@
             const client = stitch.Stitch.initializeDefaultAppClient('ctagsvis-bymac');
             const db = client.getServiceClient(stitch.RemoteMongoClient.factory, 'mongodb-atlas').db('ctags');
 
-             $(document).ready(function(){
-                $('.collapsible').collapsible();
+            const getStatus = function(project) {
+                console.log("getStatus:in");
+                db.collection("status").find({"project": project}).asArray().then(docs => {
+                    if (docs.length > 0) { 
+                        $(".status")[0].innerText = project + " processing: " + docs[0].status;
+                    } 
+                })
+            }
+
+            const addPackage = function(pkg) {
+                $(".packages").append("<li class='collapsible-header collapsible-header-no-margin'>package <b>" + pkg + "</b><ul class='inner-package collection collapsible-body inner-package-" + pkg + "'></ul></li>");
+            }
+
+            const addType = function(project, pkg, tipe, path, lineNum) {
+                $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(project, path, lineNum) + "'>type <b>" + tipe + "</a></b><ul class='inner-type collection-item inner-type-" + tipe + "'></ul></li>")
+            }
+
+            const addFunc = function(project, tipe, func, path, lineNum) {
+                $(".inner-type-" + tipe).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(project, path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(project, path, lineNum) +  "'> references</a></small></li>")
+            }
+
+            const addPackageFunc = function(project, pkg, func, path, lineNum) {
+                $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(project, path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(project, path, lineNum) +  "'> references</a></small></li>")
+            }
+
+            const transformFileToReferencesLink = function(p, fp, lineNum) {
+                // https://sourcegraph.com/github.com/go-telegram-bot-api/telegram-bot-api/-/blob/bot.go#L38:6&tab=references
+                debugger;
+                p = p.replace("https://", "");
+                let b = fp.split("/");
+                b.shift();
+                return "https://sourcegraph.com/" + p + "/-/blob/" + b.join("/") + "#L" + lineNum + ":6&tab=references";
+            }
+
+            const transformFileToLink = function(p, fp, lineNum) {
+                let b = fp.split("/");
+                b.shift();
+                return p + "/blob/master/" + b.join("/") + "#L" + lineNum;
+            }
+          
+            const analyzeProject = function(project) {
+                $(".status").show();
+                $(".status")[0].innerText = project + " processing: started";
+                setInterval(function() { getStatus(project) }, 3000);
+                $.post( "/process", { gitproject: project } ).then(res => {
+                    clearInterval();
+                    $(".status")[0].innerText = project + " fetching data from Atlas";
+                    db.collection("ctags").find({"gp": project}).asArray().then(docs => {
+                    console.log("Found docs", docs)
+                    console.log("[MongoDB Stitch] Connected to Stitch")
+                    docs = docs.filter(item => item.package != "");
+                    const packages = [...new Set(docs.map(item => item.package))];
+                    packages.sort();
+                    packages.forEach(pkg => { 
+                        // package
+                        addPackage(pkg);
+                        docs.filter(item => item.package === pkg && item.kind === "func" && item.scope === pkg).forEach(o => {
+                            // package-level funcs
+                            addPackageFunc(project, pkg, o.name, o.path, o.lineNum);
+                        });
+                        docs.filter(item => item.package === pkg && item.kind === "struct").forEach(item => {
+                            // type
+                            addType(project, pkg, item.name, item.path, item.lineNum);
+                            tipe = item.name;
+                            docs.filter(fitem => fitem.package === pkg && fitem.kind === "func" && fitem.scope === pkg + "." + tipe).forEach(o => {
+                                // function
+                                addFunc(project, tipe, o.name, o.path, o.lineNum);
+                            })
+                        });
+                    });
+                    $(".stats-container").show();
+                    $(".packages-container").show();
+                    $('.collapsible').collapsible();
+                    $(".status").hide();
+                }).catch(err => {
+                    console.error(err)
+                });
+                
             });
+        };
         </script>      
         <style>
             .collapsible-header-no-margin {
                 display: block !important;
             }
+
+            .status {
+                background-color: #6eb9fb;
+            }
+            
         </style>
     </head>
     <body>
         <div class="status">
-            Initializing...
+            initializing...
         </div>
+        <form class="init-form col s12" style="display: none;" >
+            <div class="row">
+                <div class="input-field col s6">
+                    <input id="git_project" type="text" class="validate" placeholder="Enter the git project URL" >
+                    <label for="git_project">Git Project</label>
+                    <a class="waves-effect waves-light btn-small" onclick="analyzeProject($('#git_project')[0].value)">Analyze</a>
+                </div>
+            </div>
+        </form>
         <div class="stats-container" style="display: none;">
             <h2>
                 Some random eye-candy charts
@@ -41,73 +132,10 @@
             </ul>
         </div>
         <script>
-
-            const addPackage = function(pkg) {
-                $(".packages").append("<li class='collapsible-header collapsible-header-no-margin'>package <b>" + pkg + "</b><ul class='inner-package collection collapsible-body inner-package-" + pkg + "'></ul></li>");
-            }
-
-            const addType = function(pkg, tipe, path, lineNum) {
-                $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>type <b>" + tipe + "</a></b><ul class='inner-type collection-item inner-type-" + tipe + "'></ul></li>")
-            }
-
-            const addFunc = function(tipe, func, path, lineNum) {
-                $(".inner-type-" + tipe).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(path, lineNum) +  "'> references</a></small></li>")
-            }
-
-            const addPackageFunc = function(pkg, func, path, lineNum) {
-                $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(path, lineNum) +  "'> references</a></small></li>")
-            }
-
-            const transformFileToReferencesLink = function(filepath, lineNum) {
-                // file:///Users/tomeryakir/telegram-bot-api/helpers.go
-                // https://sourcegraph.com/github.com/go-telegram-bot-api/telegram-bot-api/-/blob/bot.go#L38:6&tab=references
-                const removeMe = "/Users/tomeryakir/telegram-bot-api";
-                const prefix = "github.com/go-telegram-bot-api/telegram-bot-api/-/blob";
-                filepath = filepath.replace(removeMe, "");
-                return "https://sourcegraph.com/" + prefix + filepath + "#L" + lineNum + ":6&tab=references";
-            }
-
-            const transformFileToLink = function(filepath, lineNum) {
-                // file:///Users/tomeryakir/telegram-bot-api/helpers.go
-                // https://github.com/go-telegram-bot-api/telegram-bot-api/blob/master/helpers.go
-                const prefix = "https://github.com/go-telegram-bot-api/telegram-bot-api/blob/master";
-                const removeMe = "/Users/tomeryakir/telegram-bot-api";
-                filepath = filepath.replace(removeMe, "");
-                return prefix + filepath + "#L" + lineNum;
-            }
-          
-            client.auth.loginWithCredential(new stitch.AnonymousCredential()).then(user =>
-              db.collection("ctags").find({}).asArray()
-            ).then(docs => {
-                console.log("Found docs", docs)
-                console.log("[MongoDB Stitch] Connected to Stitch")
-                docs = docs.filter(item => item.package != "");
-                const packages = [...new Set(docs.map(item => item.package))];
-                packages.sort();
-                packages.forEach(pkg => { 
-                    // package
-                    addPackage(pkg);
-                    docs.filter(item => item.package === pkg && item.kind === "func" && item.scope === pkg).forEach(o => {
-                        // package-level funcs
-                        addPackageFunc(pkg, o.name, o.path, o.lineNum);
-                    });
-                    docs.filter(item => item.package === pkg && item.kind === "struct").forEach(item => {
-                        // type
-                        addType(pkg, item.name, item.path, item.lineNum);
-                        tipe = item.name;
-                        docs.filter(fitem => fitem.package === pkg && fitem.kind === "func" && fitem.scope === pkg + "." + tipe).forEach(o => {
-                            // function
-                            addFunc(tipe, o.name, o.path, o.lineNum);
-                        })
-                    });
-                });
-
-                $(".status").hide();
-                $(".stats-container").show();
-                $(".packages-container").show();
-            }).catch(err => {
-              console.error(err)
+            client.auth.loginWithCredential(new stitch.AnonymousCredential()).then(user => {
+                $(".init-form").show();
+                $(".status")[0].innerText = "";
             });
-          </script>
+        </script>
     </body>
 </html>

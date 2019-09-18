@@ -115,6 +115,7 @@ func makeHandleRootFn() func(http.ResponseWriter, *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", makeHandleRootFn())
+	fmt.Println("listening on port 8080")
 	http.ListenAndServe(":8080", mux)
 
 }

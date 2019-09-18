@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -21,13 +21,7 @@ type TagData struct {
 	GitProject string `json:"gp"`
 }
 
-func main() {
-	var inputFile string
-	var gitproject string
-	flag.StringVar(&inputFile, "in", "", "input log file")
-	flag.StringVar(&gitproject, "git", "", "git project")
-	flag.Parse()
-
+func enrich(inputFile, gitproject string) {
 	tagsFile, err := ioutil.ReadFile(inputFile)
 	if err != nil {
 		panic(err)
@@ -94,5 +88,18 @@ func main() {
 	if _, err := fo.Write(newJson); err != nil {
 		panic(err)
 	}
+
+}
+
+func makeHandleRootFn() func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hello from go!"))
+	}
+}
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", makeHandleRootFn())
+	http.ListenAndServe(":8080", mux)
 
 }

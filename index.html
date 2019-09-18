@@ -5,36 +5,93 @@
             src="https://code.jquery.com/jquery-3.4.1.min.js"
             integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo="
             crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script> 
+        <script>
+            const client = stitch.Stitch.initializeDefaultAppClient('ctagsvis-bymac');
+            const db = client.getServiceClient(stitch.RemoteMongoClient.factory, 'mongodb-atlas').db('ctags');
+
+             $(document).ready(function(){
+                $('.collapsible').collapsible();
+            });
+        </script>      
+        <style>
+            .collapsible-header-no-margin {
+                display: block !important;
+            }
+        </style>
     </head>
     <body>
         <div class="status">
-            Loading Data...
+            Initializing...
         </div>
         <div class="stats-container" style="display: none;">
-            Stats
+            <h2>
+                Some random eye-candy charts
+            </h2>
+            <div>
+                    <iframe style="border: none;border-radius: 2px;box-shadow: 0 2px 10px 0 rgba(70, 76, 79, .2);" width="640" height="480" src="https://charts.mongodb.com/charts-tomertest-irgpr/embed/charts?id=2334897b-3ad3-44d5-a4e8-def20513dd4f&tenant=6d41f3bf-8781-49f2-a18b-f50e5a87aed1"></iframe>
+                    <iframe style="border: none;border-radius: 2px;box-shadow: 0 2px 10px 0 rgba(70, 76, 79, .2);" width="640" height="480" src="https://charts.mongodb.com/charts-tomertest-irgpr/embed/charts?id=48a864cf-c40e-4c78-8f40-1a78a10044c2&tenant=6d41f3bf-8781-49f2-a18b-f50e5a87aed1"></iframe>
+            </div>
+            
         </div>
         <div class="packages-container" style="display: none;">
-            <span>Packages</span>
-            <ul class="packages">
+            <h2>Packages</h2>
+            <ul class="packages collapsible">
             </ul>
         </div>
         <script>
 
             const addPackage = function(pkg) {
-                $(".packages").append("<li>" + pkg + "<ul class='inner-package inner-package-" + pkg + "'></ul></li>");
+                $(".packages").append("<li class='collapsible-header collapsible-header-no-margin'>package <b>" + pkg + "</b><ul class='inner-package collection collapsible-body inner-package-" + pkg + "'></ul></li>");
             }
 
-            const addType = function(pkg, tipe) {
-                $(".inner-package-" + pkg).append("<li>" + tipe + "</li>")
+            const addType = function(pkg, tipe, path, lineNum) {
+                $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>type <b>" + tipe + "</a></b><ul class='inner-type collection-item inner-type-" + tipe + "'></ul></li>")
             }
-            // https://github.com/10gen/atlasproxy/blob/ee48fe5d83c4d5d85c701665597a47969cc0dc92/backup_config.go#L6
-            // /Users/tomeryakir/atlasproxy/src/github.com/10gen/atlasproxy/session.go
-            const client = stitch.Stitch.initializeDefaultAppClient('ctagsvis-bymac');
-          
-            const db = client.getServiceClient(stitch.RemoteMongoClient.factory, 'mongodb-atlas').db('ctags');
+
+            const addFunc = function(tipe, func, path, lineNum) {
+                $(".inner-type-" + tipe).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(path, lineNum) +  "'> references</a></small></li>")
+            }
+
+            const addPackageFunc = function(pkg, func, path, lineNum) {
+                $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(path, lineNum) +  "'> references</a></small></li>")
+            }
+
+            /*
+            const transformFileToLink = function(filepath, lineNum) {
+                // https://github.com/10gen/atlasproxy/blob/ee48fe5d83c4d5d85c701665597a47969cc0dc92/backup_config.go#L6
+                // /Users/tomeryakir/atlasproxy/src/github.com/10gen/atlasproxy/session.go
+                const removeMe = "/Users/tomeryakir/atlasproxy/src/";
+                const prefix = "github.com/10gen/atlasproxy"
+                const commit = "ee48fe5d83c4d5d85c701665597a47969cc0dc92";
+                filepath = filepath.replace(removeMe, "");
+                filepath = filepath.substring(prefix.length);
+                
+                return `https://${prefix}/blob/${commit}${filepath}#L${lineNum}`;
+            }
+            */
+
+            const transformFileToReferencesLink = function(filepath, lineNum) {
+                // file:///Users/tomeryakir/telegram-bot-api/helpers.go
+                // https://sourcegraph.com/github.com/go-telegram-bot-api/telegram-bot-api/-/blob/bot.go#L38:6&tab=references
+                const removeMe = "/Users/tomeryakir/telegram-bot-api";
+                const prefix = "github.com/go-telegram-bot-api/telegram-bot-api/-/blob";
+                filepath = filepath.replace(removeMe, "");
+                return `https://sourcegraph.com/${prefix}${filepath}#L${lineNum}:6&tab=references`;
+            }
+
+            const transformFileToLink = function(filepath, lineNum) {
+                // file:///Users/tomeryakir/telegram-bot-api/helpers.go
+                // https://github.com/go-telegram-bot-api/telegram-bot-api/blob/master/helpers.go
+                const prefix = "https://github.com/go-telegram-bot-api/telegram-bot-api/blob/master";
+                const removeMe = "/Users/tomeryakir/telegram-bot-api";
+                filepath = filepath.replace(removeMe, "");
+                return `${prefix}${filepath}#L${lineNum}`;
+            }
           
             client.auth.loginWithCredential(new stitch.AnonymousCredential()).then(user =>
-              db.collection('atlasproxy').find({}).asArray()
+              db.collection("ctags").find({}).asArray()
             ).then(docs => {
                 console.log("Found docs", docs)
                 console.log("[MongoDB Stitch] Connected to Stitch")
@@ -42,9 +99,23 @@
                 const packages = [...new Set(docs.map(item => item.package))];
                 packages.sort();
                 packages.forEach(pkg => { 
-                    addPackage(pkg) 
-                    docs.filter(item => item.package === pkg && item.kind === "struct").forEach(item => addType(pkg, item.name));
+                    // package
+                    addPackage(pkg);
+                    docs.filter(item => item.package === pkg && item.kind === "func" && item.scope === pkg).forEach(o => {
+                        // package-level funcs
+                        addPackageFunc(pkg, o.name, o.path, o.lineNum);
+                    });
+                    docs.filter(item => item.package === pkg && item.kind === "struct").forEach(item => {
+                        // type
+                        addType(pkg, item.name, item.path, item.lineNum);
+                        tipe = item.name;
+                        docs.filter(fitem => fitem.package === pkg && fitem.kind === "func" && fitem.scope === pkg + "." + tipe).forEach(o => {
+                            // function
+                            addFunc(tipe, o.name, o.path, o.lineNum);
+                        })
+                    });
                 });
+
                 $(".status").hide();
                 $(".stats-container").show();
                 $(".packages-container").show();

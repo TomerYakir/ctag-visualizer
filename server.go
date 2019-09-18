@@ -93,10 +93,7 @@ func enrich(inputFile, gitproject string) {
 }
 
 func getHtmlTemplateBinData() []byte {
-	data, err := ioutil.ReadFile("index.html")
-	if err != nil {
-		panic(fmt.Sprintf("error parsing template file : %v", err))
-	}
+	data, _ := HtmlIndexHtmlBytes()
 	return data
 }
 
@@ -108,7 +105,6 @@ func getOutput(w http.ResponseWriter) {
 func makeHandleRootFn() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		getOutput(w)
-		// w.Write([]byte("hello from go!"))
 	}
 }
 

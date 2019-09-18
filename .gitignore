@@ -1,3 +1,6 @@
 
 tags
 atlasproxytags.json
+bin/go-bindata
+pkg/darwin_amd64/github.com/jteeuwen/go-bindata.a
+src/github.com/jteeuwen/go-bindata/

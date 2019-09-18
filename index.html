@@ -58,27 +58,13 @@
                 $(".inner-package-" + pkg).append("<li class='collection-item'><a target='_blank' href='" + transformFileToLink(path, lineNum) + "'>func <b>" + func + "</b></a><small><a target='_blank' href='" + transformFileToReferencesLink(path, lineNum) +  "'> references</a></small></li>")
             }
 
-            /*
-            const transformFileToLink = function(filepath, lineNum) {
-                // https://github.com/10gen/atlasproxy/blob/ee48fe5d83c4d5d85c701665597a47969cc0dc92/backup_config.go#L6
-                // /Users/tomeryakir/atlasproxy/src/github.com/10gen/atlasproxy/session.go
-                const removeMe = "/Users/tomeryakir/atlasproxy/src/";
-                const prefix = "github.com/10gen/atlasproxy"
-                const commit = "ee48fe5d83c4d5d85c701665597a47969cc0dc92";
-                filepath = filepath.replace(removeMe, "");
-                filepath = filepath.substring(prefix.length);
-                
-                return `https://${prefix}/blob/${commit}${filepath}#L${lineNum}`;
-            }
-            */
-
             const transformFileToReferencesLink = function(filepath, lineNum) {
                 // file:///Users/tomeryakir/telegram-bot-api/helpers.go
                 // https://sourcegraph.com/github.com/go-telegram-bot-api/telegram-bot-api/-/blob/bot.go#L38:6&tab=references
                 const removeMe = "/Users/tomeryakir/telegram-bot-api";
                 const prefix = "github.com/go-telegram-bot-api/telegram-bot-api/-/blob";
                 filepath = filepath.replace(removeMe, "");
-                return `https://sourcegraph.com/${prefix}${filepath}#L${lineNum}:6&tab=references`;
+                return "https://sourcegraph.com/" + prefix + filepath + "#L" + lineNum + ":6&tab=references";
             }
 
             const transformFileToLink = function(filepath, lineNum) {
@@ -87,7 +73,7 @@
                 const prefix = "https://github.com/go-telegram-bot-api/telegram-bot-api/blob/master";
                 const removeMe = "/Users/tomeryakir/telegram-bot-api";
                 filepath = filepath.replace(removeMe, "");
-                return `${prefix}${filepath}#L${lineNum}`;
+                return prefix + filepath + "#L" + lineNum;
             }
           
             client.auth.loginWithCredential(new stitch.AnonymousCredential()).then(user =>

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -91,9 +92,23 @@ func enrich(inputFile, gitproject string) {
 
 }
 
+func getHtmlTemplateBinData() []byte {
+	data, err := ioutil.ReadFile("index.html")
+	if err != nil {
+		panic(fmt.Sprintf("error parsing template file : %v", err))
+	}
+	return data
+}
+
+func getOutput(w http.ResponseWriter) {
+	tmpl := template.Must(template.New("index").Parse(string(getHtmlTemplateBinData())))
+	tmpl.Execute(w, nil)
+}
+
 func makeHandleRootFn() func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello from go!"))
+		getOutput(w)
+		// w.Write([]byte("hello from go!"))
 	}
 }
 

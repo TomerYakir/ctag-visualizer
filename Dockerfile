@@ -1,26 +1,44 @@
-ARG GO_VERSION=1.11
-FROM golang:${GO_VERSION}-alpine AS builder
+FROM dqneo/ubuntu-build-essential:go
 
-WORKDIR /src
+# Default Packages
+RUN buildDeps=' \
+          bison \
+          libgdbm-dev \
+          ruby \
+          wget \
+          build-essential \
+          xz-utils \
+          curl \
+          autoconf \
+          zlib1g-dev \
+          libcurl4-openssl-dev \
+          libsasl2-dev \
+          libgmp3-dev \
+          libpq-dev \
+          openssh-client \
+          git \
+          git-core \
+          libsnappy-dev \
+          libreadline-dev \
+          vim \
+    ' \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends $buildDeps \
+    && rm -rf /var/lib/apt/lists/*
 
-# Import the code from the context.
-COPY ./ ./
+# Install universal ctags
+RUN git clone https://github.com/universal-ctags/ctags.git
+RUN cd ctags
+RUN apt-get update && apt install -y automake
+RUN cd ctags
+RUN apt-get install -y libjansson-dev && cd ctags && ./autogen.sh && ./configure && make && make install
+# RUN ./autogen.sh
+# RUN ./configure
+# RUN make
+# RUN make install
 
-# Build the executable to `/app`. Mark the build as statically linked.
-RUN CGO_ENABLED=0 go build \
-    -installsuffix 'static' \
-    -o /app server.go bindata.go
+RUN git clone https://github.com/go-telegram-bot-api/telegram-bot-api
+RUN cd telegram-bot-api/
+RUN ctags -R  --output-format=json --languages=go .
 
-# Final stage: the running container.
-FROM scratch AS final
-
-# Import the compiled executable from the first stage.
-COPY --from=builder /app /app
-
-# Declare the port on which the webserver will be exposed.
-# As we're going to run the executable as an unprivileged user, we can't bind
-# to ports below 1024.
-EXPOSE 8080
-
-# Run the compiled binary.
-ENTRYPOINT ["/app"]
+CMD ["/bin/bash"]

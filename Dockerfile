@@ -30,7 +30,6 @@ RUN buildDeps=' \
 RUN git clone https://github.com/universal-ctags/ctags.git
 RUN cd ctags
 RUN apt-get update && apt install -y automake
-RUN cd ctags
 RUN apt-get install -y libjansson-dev && cd ctags && ./autogen.sh && ./configure && make && make install
 # RUN ./autogen.sh
 # RUN ./configure
@@ -38,7 +37,7 @@ RUN apt-get install -y libjansson-dev && cd ctags && ./autogen.sh && ./configure
 # RUN make install
 
 RUN git clone https://github.com/go-telegram-bot-api/telegram-bot-api
-RUN cd telegram-bot-api/
-RUN ctags -R  --output-format=json --languages=go .
+# RUN cd telegram-bot-api/
+# RUN ctags -R  --output-format=json --languages=go .
 
 CMD ["/bin/bash"]

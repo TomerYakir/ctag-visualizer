@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -245,6 +246,7 @@ func makeHandleProcessFn() func(http.ResponseWriter, *http.Request) {
 }
 
 func main() {
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", makeHandleRootFn())
 	mux.HandleFunc("/process", makeHandleProcessFn())

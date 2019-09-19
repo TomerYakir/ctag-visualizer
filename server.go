@@ -150,6 +150,7 @@ func fetchRepo(gp string) error {
 	if err != nil {
 		return fmt.Errorf("failed to run git clone for package %s.\nout: %v\nerr: %v", gp, string(out), err)
 	}
+	fmt.Println("err", err, "out", string(out))
 	return nil
 }
 

@@ -124,20 +124,21 @@
                 </div>
             </div>
         </form>
-        <div class="stats-container" style="display: none;">
-            <h2>
-                Some random eye-candy charts
-            </h2>
-            <div>
-                <iframe id="chart-1" width="640" height="480"></iframe>
-                <iframe id="chart-2" width="640" height="480"></iframe>
+        <div class="row">
+            <div class="packages-container col s4" style="display: none;">
+                <h2>Packages</h2>
+                <ul class="packages collapsible">
+                </ul>
             </div>
-            
-        </div>
-        <div class="packages-container" style="display: none;">
-            <h2>Packages</h2>
-            <ul class="packages collapsible">
-            </ul>
+            <div class="stats-container col s8" style="display: none;">
+                <h2>
+                    Some random eye-candy charts
+                </h2>
+                <div>
+                    <iframe id="chart-1" width="1000" height="300"></iframe>
+                    <iframe id="chart-2" width="1000" height="600"></iframe>
+                </div>
+            </div>
         </div>
         <script>
             client.auth.loginWithCredential(new stitch.AnonymousCredential()).then(user => {
